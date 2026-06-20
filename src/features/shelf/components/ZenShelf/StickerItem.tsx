@@ -679,22 +679,7 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
                 onMouseDown={handleMouseDown}
                 onDoubleClick={handleDoubleClick}
             >
-                {sticker.type === 'text' && sticker.linkCard ? (
-                    <article className={`${styles.linkCardSticker} ${!sticker.linkCard.imageUrl ? styles.noImage : ''}`}>
-                        {sticker.linkCard.imageUrl && (
-                            <img
-                                src={sticker.linkCard.imageUrl}
-                                alt=""
-                                className={styles.linkCardImage}
-                                draggable={false}
-                            />
-                        )}
-                        <div className={styles.linkCardContent}>
-                            <div className={styles.linkCardTitle}>{sticker.linkCard.title}</div>
-                            <div className={styles.linkCardSubtitle}>{sticker.linkCard.subtitle}</div>
-                        </div>
-                    </article>
-                ) : sticker.type === 'text' ? (
+                {sticker.type === 'text' ? (
                     <div className={sticker.hasCheckbox ? styles.textStickerContainer : ''}>
                         {sticker.hasCheckbox && (
                             <button
@@ -717,19 +702,35 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
                                 )}
                             </button>
                         )}
-                        <div
-                            className={[
-                                styles.textSticker,
-                                isDragging && styles.dragging,
-                                isCreativeMode && styles.creativeHover,
-                                sticker.isChecked && styles.textStickerCrossedOut,
-                            ].filter(Boolean).join(' ')}
-                            style={{
-                                color: getThemeAwareColor(sticker.style?.color || '#1C1C1E', theme),
-                                textAlign: sticker.style?.textAlign || 'left',
-                                fontSize: scaledFontSize,
-                            }}
-                        >
+                        {sticker.linkCard ? (
+                            <article className={`${styles.linkCardSticker} ${!sticker.linkCard.imageUrl ? styles.noImage : ''}`}>
+                                {sticker.linkCard.imageUrl && (
+                                    <img
+                                        src={sticker.linkCard.imageUrl}
+                                        alt=""
+                                        className={styles.linkCardImage}
+                                        draggable={false}
+                                    />
+                                )}
+                                <div className={styles.linkCardContent}>
+                                    <div className={styles.linkCardTitle}>{sticker.linkCard.title}</div>
+                                    <div className={styles.linkCardSubtitle}>{sticker.linkCard.subtitle}</div>
+                                </div>
+                            </article>
+                        ) : (
+                            <div
+                                className={[
+                                    styles.textSticker,
+                                    isDragging && styles.dragging,
+                                    isCreativeMode && styles.creativeHover,
+                                    sticker.isChecked && styles.textStickerCrossedOut,
+                                ].filter(Boolean).join(' ')}
+                                style={{
+                                    color: getThemeAwareColor(sticker.style?.color || '#1C1C1E', theme),
+                                    textAlign: sticker.style?.textAlign || 'left',
+                                    fontSize: scaledFontSize,
+                                }}
+                            >
                             {hasMarkdownLinks(sticker.content) ? (
                                 splitTextWithLinks(sticker.content).map((fragment, index) => (
                                     fragment.type === 'link' ? (
@@ -752,7 +753,8 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
                             ) : (
                                 sticker.content
                             )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className={[

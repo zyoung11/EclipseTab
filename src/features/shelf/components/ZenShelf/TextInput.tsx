@@ -3,11 +3,10 @@ import { createPortal } from 'react-dom';
 import { scaleFadeIn, scaleFadeOut } from '@/shared/utils/animations';
 import { useThemeData } from '@/features/theme/context/ThemeContext';
 import { useLanguage } from '@/shared/context/LanguageContext';
-import plusIcon from '@/assets/icons/plus.svg';
-import minusIcon from '@/assets/icons/minus.svg';
-import checkCircleIcon from '@/assets/icons/check-circle.svg';
-import linkIcon from '@/assets/icons/link.svg';
-import { TEXT_COLORS } from './FloatingToolbar';
+import plusIcon from '@/assets/icons/sticker-plus.svg';
+import minusIcon from '@/assets/icons/sticker-minus.svg';
+import checkCircleIcon from '@/assets/icons/sticker-todo.svg';
+import linkIcon from '@/assets/icons/sticker-link.svg';
 import { LinkCardMetadata } from '@/shared/types';
 import { fetchLinkPreview } from '@/shared/utils/linkPreview';
 import { getSinglePlainUrl, markdownToEditableText, markdownToPlainText, rebuildMarkdownFromEditText } from '@/shared/utils/markdownLinks';
@@ -16,6 +15,7 @@ import styles from './ZenShelf.module.css';
 // localStorage 键：记忆用户上次使用的字体大小
 const LAST_FONT_SIZE_KEY = 'sticker_last_font_size';
 const DEFAULT_FONT_SIZE = 40;
+const STICKER_TEXT_COLORS = ['#1C1C1E', '#FF3B31', '#007AFF', '#35C759', '#FF9502', '#B052DE', '#FFFFFF'];
 
 const getLastFontSize = (): number => {
     const saved = localStorage.getItem(LAST_FONT_SIZE_KEY);
@@ -59,7 +59,7 @@ interface TextInputProps {
     initialStyle?: { color: string; textAlign: 'left' | 'center' | 'right'; fontSize?: number };
     initialHasCheckbox?: boolean;
     initialLinkCard?: LinkCardMetadata;
-    onSubmit: (content: string, style?: { color: string; textAlign: 'left' | 'center' | 'right'; fontSize: number }, hasCheckbox?: boolean, linkCard?: LinkCardMetadata) => void;
+    onSubmit: (content: string, style?: { color: string; textAlign: 'left' | 'center' | 'right'; fontSize: number }, hasCheckbox?: boolean, linkCard?: LinkCardMetadata, positionOffset?: { x: number; y: number }) => void;
     onCancel: () => void;
     viewportScale: number;
 }
@@ -77,9 +77,11 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>(({ x, y, in
     const toolbarRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const originalMarkdownRef = useRef(initialText);
+    const toolbarAnchorTopRef = useRef<number | null>(null);
+    const submitPositionOffsetRef = useRef({ x: 0, y: 0 });
     // 始终使用左对齐
     const textAlign = 'left' as const;
-    const [textColor, setTextColor] = useState(initialStyle?.color || TEXT_COLORS[0]);
+    const [textColor, setTextColor] = useState(initialStyle?.color || STICKER_TEXT_COLORS[0]);
     const [fontSize, setFontSize] = useState<number>(
         (initialStyle?.fontSize as number) || getLastFontSize()
     );
@@ -115,7 +117,7 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>(({ x, y, in
             const text = getCurrentEditText();
             if (text) {
                 const { textColor: c, fontSize: f, hasCheckbox: cb } = latestStateRef.current;
-                onSubmit(getSubmittedContent(text), { color: c, textAlign: 'left', fontSize: f }, cb, linkCard);
+                onSubmit(getSubmittedContent(text), { color: c, textAlign: 'left', fontSize: f }, cb, linkCard, submitPositionOffsetRef.current);
             } else {
                 onCancel();
             }
@@ -186,38 +188,29 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>(({ x, y, in
 
     const handleSubmitContent = useCallback((editText: string) => {
         const contentWithLinks = getSubmittedContent(editText);
-        triggerExit(() => onSubmit(contentWithLinks, { color: textColor, textAlign, fontSize }, hasCheckbox, linkCard), false);
+        triggerExit(() => onSubmit(contentWithLinks, { color: textColor, textAlign, fontSize }, hasCheckbox, linkCard, submitPositionOffsetRef.current), false);
     }, [fontSize, getSubmittedContent, hasCheckbox, linkCard, onSubmit, textColor, textAlign, triggerExit]);
 
-    // 点击外部关闭 - 立即保存，不等出场动画
+    // 点击外部关闭 - 等待出场动画结束后再保存，避免父组件提前卸载
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (isExiting) return;
+            if (isExiting || hasSubmittedRef.current) return;
             const target = e.target as HTMLElement;
             // 检查是否点击了输入框或工具栏
-            if (inputRef.current?.contains(target) || toolbarRef.current?.contains(target)) {
+            if (inputWrapperRef.current?.contains(target) || toolbarRef.current?.contains(target)) {
                 return;
             }
             // 从 ref 读取最新状态，避免闭包过时值
             const { textColor: currentColor, fontSize: currentSize, hasCheckbox: currentCheckbox } = latestStateRef.current;
-            // 立即提交/取消，不等动画完成
-            setIsExiting(true);
             const text = getCurrentEditText();
+            hasSubmittedRef.current = true;
+
             if (text) {
-                hasSubmittedRef.current = true;
-                if (toolbarRef.current) {
-                    scaleFadeOut(toolbarRef.current, 150);
-                }
-                onSubmit(getSubmittedContent(text), { color: currentColor, textAlign, fontSize: currentSize }, currentCheckbox, linkCard);
+                triggerExit(() => {
+                    onSubmit(getSubmittedContent(text), { color: currentColor, textAlign, fontSize: currentSize }, currentCheckbox, linkCard, submitPositionOffsetRef.current);
+                }, false);
             } else {
-                hasSubmittedRef.current = true;
-                if (inputWrapperRef.current) {
-                    scaleFadeOut(inputWrapperRef.current, 150);
-                }
-                if (toolbarRef.current) {
-                    scaleFadeOut(toolbarRef.current, 150);
-                }
-                onCancel();
+                triggerExit(onCancel, !initialText);
             }
         };
         const timer = setTimeout(() => {
@@ -227,7 +220,7 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>(({ x, y, in
             clearTimeout(timer);
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [getCurrentEditText, getSubmittedContent, linkCard, onSubmit, onCancel, isExiting]);
+    }, [getCurrentEditText, getSubmittedContent, initialText, isExiting, linkCard, onCancel, onSubmit, triggerExit]);
 
     // 字体大小调整常量
     const FONT_SIZE_STEP = 2; // 每次调整的步长（px）
@@ -259,8 +252,8 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>(({ x, y, in
                 e.preventDefault();
                 // 1-based index to 0-based index
                 const colorIndex = numKey - 1;
-                if (colorIndex < TEXT_COLORS.length) {
-                    setTextColor(TEXT_COLORS[colorIndex]);
+                if (colorIndex < STICKER_TEXT_COLORS.length) {
+                    setTextColor(STICKER_TEXT_COLORS[colorIndex]);
                 }
                 return;
             }
@@ -334,6 +327,7 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>(({ x, y, in
 
     const handleCreateLinkCard = async () => {
         if (linkCard) {
+            toolbarAnchorTopRef.current = toolbarRef.current?.getBoundingClientRect().top ?? null;
             setLinkCard(undefined);
             window.setTimeout(() => {
                 if (inputRef.current) {
@@ -350,6 +344,7 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>(({ x, y, in
         setIsFetchingLinkCard(true);
         try {
             const preview = await fetchLinkPreview(url);
+            toolbarAnchorTopRef.current = toolbarRef.current?.getBoundingClientRect().top ?? null;
             setLinkCard(preview);
         } finally {
             setIsFetchingLinkCard(false);
@@ -359,34 +354,74 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>(({ x, y, in
 
     // State for visual position, initially matching props
     const [position, setPosition] = useState({ x, y });
+    const previousOriginRef = useRef({ x, y });
 
-    // Use useLayoutEffect to adjust position before painting if it overflows
+    // 父级坐标变化时保留当前的内部锚点偏移。
     React.useLayoutEffect(() => {
-        if (containerRef.current) {
+        const previous = previousOriginRef.current;
+        const deltaX = x - previous.x;
+        const deltaY = y - previous.y;
+
+        if (deltaX || deltaY) {
+            setPosition(current => ({ x: current.x + deltaX, y: current.y + deltaY }));
+            previousOriginRef.current = { x, y };
+        }
+    }, [x, y]);
+
+    // 卡片尺寸变化时锁定工具栏位置，并处理视口边缘溢出。
+    React.useLayoutEffect(() => {
+        if (containerRef.current && toolbarRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
             const PADDING = 20;
 
-            let newX = x;
-            let newY = y;
+            let newX = position.x;
+            let newY = position.y;
+            let projectedLeft = rect.left;
+            let projectedRight = rect.right;
+            let projectedTop = rect.top;
+            let projectedBottom = rect.bottom;
+
+            const toolbarAnchorTop = toolbarAnchorTopRef.current;
+            const isAnchoringCard = toolbarAnchorTop !== null;
+            if (toolbarAnchorTop !== null) {
+                const toolbarTop = toolbarRef.current.getBoundingClientRect().top;
+                const anchorOffset = toolbarAnchorTop - toolbarTop;
+                newY += anchorOffset;
+                projectedTop += anchorOffset;
+                projectedBottom += anchorOffset;
+                toolbarAnchorTopRef.current = null;
+            }
 
             // Check right edge
-            if (x + rect.width > viewportWidth - PADDING) {
-                newX = viewportWidth - rect.width - PADDING;
+            if (projectedRight > viewportWidth - PADDING) {
+                const offset = viewportWidth - PADDING - projectedRight;
+                newX += offset;
+                projectedLeft += offset;
+                projectedRight += offset;
             }
             // Check left edge
-            if (newX < PADDING) {
-                newX = PADDING;
+            if (projectedLeft < PADDING) {
+                newX += PADDING - projectedLeft;
             }
 
             // Check bottom edge
-            if (y + rect.height > viewportHeight - PADDING) {
-                newY = viewportHeight - rect.height - PADDING;
+            if (projectedBottom > viewportHeight - PADDING) {
+                const offset = viewportHeight - PADDING - projectedBottom;
+                newY += offset;
+                projectedTop += offset;
             }
             // Check top edge
-            if (newY < PADDING) {
-                newY = PADDING;
+            if (projectedTop < PADDING) {
+                newY += PADDING - projectedTop;
+            }
+
+            if (isAnchoringCard) {
+                submitPositionOffsetRef.current = {
+                    x: submitPositionOffsetRef.current.x,
+                    y: submitPositionOffsetRef.current.y + (newY - position.y),
+                };
             }
 
             // Only update if changed significantly to avoid loops
@@ -394,7 +429,7 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>(({ x, y, in
                 setPosition({ x: newX, y: newY });
             }
         }
-    }, [x, y, fontSize, viewportScale, position.x, position.y]); // Re-run when size might change
+    }, [detectedUrl, fontSize, linkCard, position.x, position.y, viewportScale]);
 
     return createPortal(
         <div
@@ -404,7 +439,7 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>(({ x, y, in
         >
             {/* 实时预览贴纸 - 直接在背景上显示 */}
             <div ref={inputWrapperRef} className={hasCheckbox ? styles.textStickerContainer : ''}>
-                {hasCheckbox && !linkCard && (
+                {hasCheckbox && (
                     <button
                         className={styles.textStickerCheckbox}
                         style={{ cursor: 'default', pointerEvents: 'none' }}
@@ -453,74 +488,83 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>(({ x, y, in
                 className={styles.stickerToolbar}
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* 字体大小控制 */}
-                <div className={styles.toolbarFontSizeControl}>
+                <div className={`${styles.toolbarPanel} ${styles.toolbarSettings} ${detectedUrl ? styles.withLinkAction : ''}`}>
+                    <div className={styles.toolbarStylePanel}>
+                        {/* 字体大小控制 */}
+                        <div className={styles.toolbarFontSizeControl}>
+                            <button
+                                className={styles.toolbarFontSizeBtn}
+                                onClick={(e) => {
+                                    const step = e.shiftKey ? FONT_SIZE_STEP_LARGE : FONT_SIZE_STEP;
+                                    setFontSize(prev => Math.max(prev - step, MIN_FONT_SIZE));
+                                }}
+                                title={t.textInput.fontSizeDecrease}
+                            >
+                                <span className={styles.toolbarIcon} style={{ WebkitMaskImage: `url(${minusIcon})`, maskImage: `url(${minusIcon})` }} />
+                            </button>
+                            <input
+                                className={styles.toolbarFontSizeInput}
+                                value={localFontSize}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    // 仅允许输入数字
+                                    if (val === '' || /^\d*$/.test(val)) {
+                                        setLocalFontSize(val);
+                                    }
+                                }}
+                                onBlur={() => commitFontSize(localFontSize)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        commitFontSize(localFontSize);
+                                        (e.target as HTMLInputElement).blur();
+                                        // 将焦点还给文本编辑器
+                                        inputRef.current?.focus();
+                                    }
+                                }}
+                                // 防止事件冒泡导致贴纸提交
+                                onClick={(e) => e.stopPropagation()}
+                                title={t.textInput.fontSizeIncrease}
+                            />
+                            <button
+                                className={styles.toolbarFontSizeBtn}
+                                onClick={(e) => {
+                                    const step = e.shiftKey ? FONT_SIZE_STEP_LARGE : FONT_SIZE_STEP;
+                                    setFontSize(prev => Math.min(prev + step, MAX_FONT_SIZE));
+                                }}
+                                title={t.textInput.fontSizeIncrease}
+                            >
+                                <span className={styles.toolbarIcon} style={{ WebkitMaskImage: `url(${plusIcon})`, maskImage: `url(${plusIcon})` }} />
+                            </button>
+                        </div>
+
+                        <div className={styles.toolbarControlDivider} />
+
+                        {/* 颜色选项 */}
+                        <div className={styles.toolbarColorGroup}>
+                            {STICKER_TEXT_COLORS.map((color) => (
+                                <button
+                                    key={color}
+                                    className={`${styles.toolbarColorBtn} ${textColor === color ? styles.active : ''}`}
+                                    style={{ backgroundColor: color }}
+                                    onClick={() => setTextColor(color)}
+                                    title={color}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 复选框切换按钮 */}
                     <button
-                        className={styles.toolbarFontSizeBtn}
-                        onClick={(e) => {
-                            const step = e.shiftKey ? FONT_SIZE_STEP_LARGE : FONT_SIZE_STEP;
-                            setFontSize(prev => Math.max(prev - step, MIN_FONT_SIZE));
-                        }}
-                        title={t.textInput.fontSizeDecrease}
+                        className={`${styles.toolbarCheckboxBtn} ${hasCheckbox ? styles.active : ''}`}
+                        onClick={() => setHasCheckbox(!hasCheckbox)}
+                        title={hasCheckbox ? 'Remove Checkbox' : 'Add Checkbox'}
                     >
-                        <span className={styles.toolbarIcon} style={{ WebkitMaskImage: `url(${minusIcon})`, maskImage: `url(${minusIcon})` }} />
+                        <span className={`${styles.toolbarIcon} ${styles.toolbarTodoIcon}`} style={{ WebkitMaskImage: `url(${checkCircleIcon})`, maskImage: `url(${checkCircleIcon})` }} />
                     </button>
-                    <input
-                        className={styles.toolbarFontSizeInput}
-                        value={localFontSize}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            // 仅允许输入数字
-                            if (val === '' || /^\d*$/.test(val)) {
-                                setLocalFontSize(val);
-                            }
-                        }}
-                        onBlur={() => commitFontSize(localFontSize)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                commitFontSize(localFontSize);
-                                (e.target as HTMLInputElement).blur();
-                                // 将焦点还给文本编辑器
-                                inputRef.current?.focus();
-                            }
-                        }}
-                        // 防止事件冒泡导致贴纸提交
-                        onClick={(e) => e.stopPropagation()}
-                        title={t.textInput.fontSizeIncrease}
-                    />
-                    <button
-                        className={styles.toolbarFontSizeBtn}
-                        onClick={(e) => {
-                            const step = e.shiftKey ? FONT_SIZE_STEP_LARGE : FONT_SIZE_STEP;
-                            setFontSize(prev => Math.min(prev + step, MAX_FONT_SIZE));
-                        }}
-                        title={t.textInput.fontSizeIncrease}
-                    >
-                        <span className={styles.toolbarIcon} style={{ WebkitMaskImage: `url(${plusIcon})`, maskImage: `url(${plusIcon})` }} />
-                    </button>
-                </div>
 
-                <div className={styles.toolbarDivider} />
-
-                {/* 颜色选项 */}
-                <div className={styles.toolbarColorGroup}>
-                    {TEXT_COLORS.map((color) => (
-                        <button
-                            key={color}
-                            className={`${styles.toolbarColorBtn} ${textColor === color ? styles.active : ''}`}
-                            style={{ backgroundColor: color }}
-                            onClick={() => setTextColor(color)}
-                            title={color}
-                        />
-                    ))}
-                </div>
-
-                <div className={styles.toolbarDivider} />
-
-                {detectedUrl && (
-                    <>
+                    {detectedUrl && (
                         <button
                             className={`${styles.toolbarLinkCardBtn} ${linkCard ? styles.active : ''}`}
                             onClick={handleCreateLinkCard}
@@ -529,33 +573,22 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>(({ x, y, in
                         >
                             <span className={styles.toolbarIcon} style={{ WebkitMaskImage: `url(${linkIcon})`, maskImage: `url(${linkIcon})` }} />
                         </button>
-
-                        <div className={styles.toolbarDivider} />
-                    </>
-                )}
-
-                {/* 复选框切换按钮 */}
-                <button
-                    className={`${styles.toolbarCheckboxBtn} ${hasCheckbox ? styles.active : ''}`}
-                    onClick={() => setHasCheckbox(!hasCheckbox)}
-                    title={hasCheckbox ? 'Remove Checkbox' : 'Add Checkbox'}
-                >
-                    <span className={styles.toolbarIcon} style={{ WebkitMaskImage: `url(${checkCircleIcon})`, maskImage: `url(${checkCircleIcon})` }} />
-                </button>
-
-                <div className={styles.toolbarDivider} />
+                    )}
+                </div>
 
                 {/* 操作按钮 */}
-                <button className={styles.toolbarCancelBtn} onClick={handleCancel}>
-                    {t.textInput.cancel}
-                </button>
-                <button
-                    className={styles.toolbarConfirmBtn}
-                    onClick={handleSubmit}
-                    disabled={!hasContent}
-                >
-                    {t.textInput.confirm}
-                </button>
+                <div className={`${styles.toolbarPanel} ${styles.toolbarActions}`}>
+                    <button className={styles.toolbarCancelBtn} onClick={handleCancel}>
+                        {t.textInput.cancel}
+                    </button>
+                    <button
+                        className={styles.toolbarConfirmBtn}
+                        onClick={handleSubmit}
+                        disabled={!hasContent}
+                    >
+                        {t.textInput.confirm}
+                    </button>
+                </div>
             </div>
         </div>,
         document.body

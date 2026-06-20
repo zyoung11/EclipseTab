@@ -355,10 +355,12 @@ export const ZenShelf: React.FC<ZenShelfProps> = ({ onOpenSettings }) => {
     }, [addSticker, viewportScale]);
 
     // 处理文本输入提交
-    const handleTextSubmit = useCallback((content: string, style?: { color: string; textAlign: 'left' | 'center' | 'right'; fontSize: number }, hasCheckbox?: boolean, linkCard?: LinkCardMetadata) => {
+    const handleTextSubmit = useCallback((content: string, style?: { color: string; textAlign: 'left' | 'center' | 'right'; fontSize: number }, hasCheckbox?: boolean, linkCard?: LinkCardMetadata, positionOffset = { x: 0, y: 0 }) => {
         if (editingSticker) {
             updateSticker(editingSticker.id, {
                 content,
+                x: editingSticker.x + positionOffset.x / viewportScale,
+                y: editingSticker.y + positionOffset.y / viewportScale,
                 style: style ? {
                     color: style.color,
                     textAlign: style.textAlign,
@@ -371,8 +373,8 @@ export const ZenShelf: React.FC<ZenShelfProps> = ({ onOpenSettings }) => {
             addSticker({
                 type: 'text',
                 content,
-                x: textInputPos.x / viewportScale,
-                y: textInputPos.y / viewportScale,
+                x: (textInputPos.x + positionOffset.x) / viewportScale,
+                y: (textInputPos.y + positionOffset.y) / viewportScale,
                 style: style ? {
                     color: style.color,
                     textAlign: style.textAlign,
