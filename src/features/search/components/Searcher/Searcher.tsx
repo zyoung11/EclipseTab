@@ -154,6 +154,7 @@ export const Searcher: React.FC<SearcherProps> = ({
             type="text"
             className={styles.searchInput}
             placeholder=""
+            autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
