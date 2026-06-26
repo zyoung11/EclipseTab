@@ -6,7 +6,7 @@ import { DockItem, Sticker } from '@/shared/types';
 import packageInfo from '../../../package.json';
 
 type BackupManifest = {
-  type: 'eclipse-tab-backup';
+  type: 'monster-tab-backup';
   version: 1;
   appVersion: string;
   exportedAt: string;
@@ -182,7 +182,7 @@ export async function exportFullBackup(): Promise<void> {
   }
 
   const manifest: BackupManifest = {
-    type: 'eclipse-tab-backup',
+    type: 'monster-tab-backup',
     version: 1,
     appVersion: packageInfo.version,
     exportedAt: new Date().toISOString(),
@@ -211,7 +211,7 @@ export async function exportFullBackup(): Promise<void> {
   ]);
 
   const date = new Date().toISOString().slice(0, 10);
-  downloadBlob(zip, `eclipse-tab-backup-${date}.zip`);
+  downloadBlob(zip, `monster-tab-backup-${date}.zip`);
 }
 
 export async function importFullBackup(file: File): Promise<void> {
@@ -219,7 +219,7 @@ export async function importFullBackup(file: File): Promise<void> {
   const manifest = readJsonEntry<BackupManifest>(entries, 'manifest.json');
   const data = readJsonEntry<BackupData>(entries, 'data.json');
 
-  if (manifest.type !== 'eclipse-tab-backup' || manifest.version !== 1) {
+  if (manifest.type !== 'monster-tab-backup' || manifest.version !== 1) {
     throw new Error('Unsupported backup file');
   }
   if (!data.spaces?.spaces || !Array.isArray(data.spaces.spaces)) {
@@ -288,7 +288,7 @@ export async function importFullBackup(file: File): Promise<void> {
   if (data.searchEngine) {
     storage.saveSearchEngine(data.searchEngine);
   } else {
-    localStorage.removeItem('EclipseTab_searchEngine');
+    localStorage.removeItem('MonsterTab_searchEngine');
   }
 
   if (data.language === 'en' || data.language === 'zh') {

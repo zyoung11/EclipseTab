@@ -1,6 +1,6 @@
 /**
  * 同步数据打包/解包
- * 负责将 localStorage 中的所有 EclipseTab 数据打包为一个 JSON，
+ * 负责将 localStorage 中的所有 MonsterTab 数据打包为一个 JSON，
  * 以及从 JSON 恢复数据到 localStorage
  */
 
@@ -36,12 +36,12 @@ export interface SyncData {
 }
 
 const SYNC_VERSION = 1;
-const STORAGE_KEY_LAST_SYNC = 'EclipseTab_lastSyncTime';
+const STORAGE_KEY_LAST_SYNC = 'MonsterTab_lastSyncTime';
 
 /** 获取设备名称（用于标识） */
 function getDeviceName(): string {
     try {
-        const saved = localStorage.getItem('EclipseTab_deviceName');
+        const saved = localStorage.getItem('MonsterTab_deviceName');
         if (saved) return saved;
     } catch { /* ignore */ }
     return 'Unknown Device';
@@ -202,7 +202,7 @@ export function isRemoteNewer(syncData: SyncData): boolean {
 }
 
 /** 存储键：上次上传的数据指纹 */
-const STORAGE_KEY_FINGERPRINT = 'EclipseTab_lastFingerprint';
+const STORAGE_KEY_FINGERPRINT = 'MonsterTab_lastFingerprint';
 
 /**
  * 计算当前本地数据的指纹（用于检测是否有变化）
@@ -210,13 +210,13 @@ const STORAGE_KEY_FINGERPRINT = 'EclipseTab_lastFingerprint';
  */
 export function computeLocalFingerprint(): string {
     const keys = [
-        'EclipseTab_config',
-        'EclipseTab_spaces',
-        'EclipseTab_dockItems',
-        'EclipseTab_searchEngine',
-        'EclipseTab_stickers',
-        'EclipseTab_deletedStickers',
-        'EclipseTab_wallpaperId',
+        'MonsterTab_config',
+        'MonsterTab_spaces',
+        'MonsterTab_dockItems',
+        'MonsterTab_searchEngine',
+        'MonsterTab_stickers',
+        'MonsterTab_deletedStickers',
+        'MonsterTab_wallpaperId',
     ];
     let combined = '';
     for (const key of keys) {

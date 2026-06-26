@@ -16,7 +16,7 @@ import { isFaviconRef, getDomainFromRef, resolveIconUrl } from '@/features/dock/
  */
 export interface SpaceExportData {
     version: string;
-    type: 'eclipse-space-export';
+    type: 'monster-space-export';
     data: {
         name: string;
         iconType: Space['iconType'];
@@ -30,7 +30,7 @@ export interface SpaceExportData {
  */
 export interface MultiSpaceExportData {
     version: string;
-    type: 'eclipse-multi-space-export';
+    type: 'monster-multi-space-export';
     data: {
         spaces: Array<{
             name: string;
@@ -121,7 +121,7 @@ export async function exportSpaceToFile(space: Space): Promise<void> {
     // 构建导出数据
     const exportData: SpaceExportData = {
         version: '1.0',
-        type: 'eclipse-space-export',
+        type: 'monster-space-export',
         data: {
             name: space.name,
             iconType: space.iconType,
@@ -134,10 +134,10 @@ export async function exportSpaceToFile(space: Space): Promise<void> {
     const jsonString = JSON.stringify(exportData, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
 
-    // 生成文件名: eclipse-space-{name}-{date}.json
+    // 生成文件名: monster-space-{name}-{date}.json
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const safeName = space.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-    const filename = `eclipse-space-${safeName}-${date}.json`;
+    const filename = `monster-space-${safeName}-${date}.json`;
 
     // 触发下载
     const url = URL.createObjectURL(blob);
@@ -173,7 +173,7 @@ export async function exportAllSpacesToFile(spaces: Space[]): Promise<void> {
     // 构建导出数据
     const exportData: MultiSpaceExportData = {
         version: '1.0',
-        type: 'eclipse-multi-space-export',
+        type: 'monster-multi-space-export',
         data: {
             spaces: spacesData,
         },
@@ -183,9 +183,9 @@ export async function exportAllSpacesToFile(spaces: Space[]): Promise<void> {
     const jsonString = JSON.stringify(exportData, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
 
-    // 生成文件名: eclipse-all-spaces-{date}.json
+    // 生成文件名: monster-all-spaces-{date}.json
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const filename = `eclipse-all-spaces-${date}.json`;
+    const filename = `monster-all-spaces-${date}.json`;
 
     // 触发下载
     const url = URL.createObjectURL(blob);
@@ -213,7 +213,7 @@ function validateExportData(data: unknown): data is SpaceExportData {
     const obj = data as Record<string, unknown>;
 
     // 检查必要字段
-    if (obj.type !== 'eclipse-space-export') {
+    if (obj.type !== 'monster-space-export') {
         return false;
     }
 
@@ -245,7 +245,7 @@ function validateMultiSpaceExportData(data: unknown): data is MultiSpaceExportDa
     const obj = data as Record<string, unknown>;
 
     // 检查必要字段
-    if (obj.type !== 'eclipse-multi-space-export') {
+    if (obj.type !== 'monster-multi-space-export') {
         return false;
     }
 

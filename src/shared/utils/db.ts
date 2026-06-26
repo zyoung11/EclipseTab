@@ -1,4 +1,4 @@
-export const DB_NAME = 'EclipseTabDB';
+export const DB_NAME = 'MonsterTabDB';
 export const STORE_NAME = 'wallpapers';
 export const STICKER_IMAGES_STORE = 'sticker_images';
 export const FAVICONS_STORE = 'favicons'; // 新增 favicon 存储

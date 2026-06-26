@@ -43,9 +43,9 @@ export async function testWebDAVConnection(config: WebDAVConfig): Promise<{ ok: 
     }
 }
 
-const SYNC_DIR = 'EclipseTab';
-const SYNC_FILENAME = 'eclipse_tab_backup.json';
-const ASSETS_PREFIX = 'eclipse_tab_assets/';
+const SYNC_DIR = 'MonsterTab';
+const SYNC_FILENAME = 'monster_tab_backup.json';
+const ASSETS_PREFIX = 'monster_tab_assets/';
 
 /**
  * 确保同步目录存在（MKCOL），如果已存在则忽略错误

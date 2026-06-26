@@ -1,29 +1,29 @@
 import { DockItem, SearchEngine, SpacesState, createDefaultSpacesState, Sticker } from '@/shared/types';
 
 const STORAGE_KEYS = {
-  DOCK_ITEMS: 'EclipseTab_dockItems',
-  SEARCH_ENGINE: 'EclipseTab_searchEngine',
+  DOCK_ITEMS: 'MonsterTab_dockItems',
+  SEARCH_ENGINE: 'MonsterTab_searchEngine',
   // Config (Unified settings)
-  CONFIG: 'EclipseTab_config',
+  CONFIG: 'MonsterTab_config',
 
   // Legacy Keys (kept for reference, strictly used for migration)
-  // THEME: 'EclipseTab_theme',
-  // FOLLOW_SYSTEM: 'EclipseTab_followSystem',
-  // DOCK_POSITION: 'EclipseTab_dockPosition',
-  // ICON_SIZE: 'EclipseTab_iconSize',
-  // GRADIENT: 'EclipseTab_gradient',
-  // TEXTURE: 'EclipseTab_texture',
+  // THEME: 'MonsterTab_theme',
+  // FOLLOW_SYSTEM: 'MonsterTab_followSystem',
+  // DOCK_POSITION: 'MonsterTab_dockPosition',
+  // ICON_SIZE: 'MonsterTab_iconSize',
+  // GRADIENT: 'MonsterTab_gradient',
+  // TEXTURE: 'MonsterTab_texture',
 
-  WALLPAPER_ID: 'EclipseTab_wallpaperId',
+  WALLPAPER_ID: 'MonsterTab_wallpaperId',
 
   // Focus Spaces
-  SPACES: 'EclipseTab_spaces',
+  SPACES: 'MonsterTab_spaces',
   // Zen Shelf Stickers
-  STICKERS: 'EclipseTab_stickers',
+  STICKERS: 'MonsterTab_stickers',
   // Deleted Stickers (Recycle Bin)
-  DELETED_STICKERS: 'EclipseTab_deletedStickers',
+  DELETED_STICKERS: 'MonsterTab_deletedStickers',
   // 贴纸图片迁移标记
-  STICKER_IMAGES_MIGRATED: 'EclipseTab_stickerImagesMigrated',
+  STICKER_IMAGES_MIGRATED: 'MonsterTab_stickerImagesMigrated',
 } as const;
 
 // Unified Configuration Interface
@@ -102,25 +102,25 @@ export const storage = {
       // Migration: Try to read legacy keys
       const config = { ...DEFAULT_CONFIG };
 
-      const legacyTheme = localStorage.getItem('EclipseTab_theme');
+      const legacyTheme = localStorage.getItem('MonsterTab_theme');
       if (legacyTheme) config.theme = legacyTheme;
 
-      const legacyFollow = localStorage.getItem('EclipseTab_followSystem');
+      const legacyFollow = localStorage.getItem('MonsterTab_followSystem');
       if (legacyFollow !== null) config.followSystem = legacyFollow === 'true';
 
-      const legacyDockPos = localStorage.getItem('EclipseTab_dockPosition');
+      const legacyDockPos = localStorage.getItem('MonsterTab_dockPosition');
       if (legacyDockPos === 'center' || legacyDockPos === 'bottom') config.dockPosition = legacyDockPos;
 
-      const legacyIconSize = localStorage.getItem('EclipseTab_iconSize');
+      const legacyIconSize = localStorage.getItem('MonsterTab_iconSize');
       if (legacyIconSize === 'small' || legacyIconSize === 'large') config.iconSize = legacyIconSize;
 
-      const legacyTexture = localStorage.getItem('EclipseTab_texture');
+      const legacyTexture = localStorage.getItem('MonsterTab_texture');
       if (legacyTexture) config.texture = legacyTexture;
 
-      const legacyGradient = localStorage.getItem('EclipseTab_gradient');
+      const legacyGradient = localStorage.getItem('MonsterTab_gradient');
       if (legacyGradient) config.gradient = legacyGradient;
 
-      const legacyOpenInNewTab = localStorage.getItem('EclipseTab_openInNewTab');
+      const legacyOpenInNewTab = localStorage.getItem('MonsterTab_openInNewTab');
       if (legacyOpenInNewTab !== null) config.openInNewTab = legacyOpenInNewTab === 'true';
 
       // Save migrated config
@@ -417,8 +417,8 @@ export const storage = {
    */
   cleanupLegacyWallpaper(): void {
     try {
-      localStorage.removeItem('EclipseTab_wallpaper');
-      localStorage.removeItem('EclipseTab_lastWallpaper');
+      localStorage.removeItem('MonsterTab_wallpaper');
+      localStorage.removeItem('MonsterTab_lastWallpaper');
     } catch {
       // ignore
     }

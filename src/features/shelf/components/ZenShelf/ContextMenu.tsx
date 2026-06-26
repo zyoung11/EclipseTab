@@ -153,7 +153,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className={styles.menuLabel}>EclipseTab</div>
+                <div className={styles.menuLabel}>MonsterTab</div>
                 <div className={styles.menuDivider} />
                 <div className={styles.menuOptions}>
                     {type === 'background' ? (

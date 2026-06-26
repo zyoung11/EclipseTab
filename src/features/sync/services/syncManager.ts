@@ -14,18 +14,18 @@ export interface SyncResult {
 /** 获取同步选项 */
 function getSyncOptions(): SyncOptions {
     return {
-        syncWallpaper: localStorage.getItem('EclipseTab_syncWallpaper') === 'true',
-        syncStickers: localStorage.getItem('EclipseTab_syncStickers') === 'true',
+        syncWallpaper: localStorage.getItem('MonsterTab_syncWallpaper') === 'true',
+        syncStickers: localStorage.getItem('MonsterTab_syncStickers') === 'true',
     };
 }
 
 /** 自动同步是否启用 */
 export function isAutoSyncEnabled(): boolean {
-    return localStorage.getItem('EclipseTab_autoSync') === 'true';
+    return localStorage.getItem('MonsterTab_autoSync') === 'true';
 }
 
 export function setAutoSyncEnabled(enabled: boolean): void {
-    localStorage.setItem('EclipseTab_autoSync', String(enabled));
+    localStorage.setItem('MonsterTab_autoSync', String(enabled));
 }
 
 /**
@@ -133,9 +133,9 @@ async function ensureHostPermission(config: WebDAVConfig): Promise<boolean> {
 /** 获取当前 WebDAV 配置 */
 export function getWebDAVConfig(): WebDAVConfig | null {
     try {
-        const url = localStorage.getItem('EclipseTab_webdav_url');
-        const username = localStorage.getItem('EclipseTab_webdav_user');
-        const password = localStorage.getItem('EclipseTab_webdav_pass');
+        const url = localStorage.getItem('MonsterTab_webdav_url');
+        const username = localStorage.getItem('MonsterTab_webdav_user');
+        const password = localStorage.getItem('MonsterTab_webdav_pass');
         if (url && username && password) {
             return { url, username, password };
         }
@@ -220,7 +220,7 @@ export async function uploadToCloud(): Promise<SyncResult> {
         }
     }
 
-    localStorage.setItem('EclipseTab_lastSyncTime', String(syncData.lastUpdated));
+    localStorage.setItem('MonsterTab_lastSyncTime', String(syncData.lastUpdated));
     saveUploadFingerprint();
     return { ok: true, message: `Upload successful${assetInfo}` };
 }
