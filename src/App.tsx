@@ -265,7 +265,7 @@ function App() {
           searchEngineTabTimerRef.current = window.setTimeout(() => {
             lastSearchEngineToggleRef.current = Date.now();
             setIsSearchEngineModalOpen(false);
-          }, 500);
+          }, 750);
         }}
         onItemEdit={handleItemEdit}
         onItemAdd={(rect) => {

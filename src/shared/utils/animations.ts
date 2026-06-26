@@ -23,7 +23,7 @@ export const fadeOut = (element: HTMLElement, duration = 300, onComplete?: () =>
  * 缩放淡入动画（用于模态框）
  * 使用双重 RAF 和强制 reflow 确保 Firefox 兼容性
  */
-export const scaleFadeIn = (element: HTMLElement, duration = 300) => {
+export const scaleFadeIn = (element: HTMLElement, duration = 150) => {
   // 设置初始状态（无过渡）
   element.style.transition = 'none';
   element.style.opacity = '0';
@@ -57,7 +57,7 @@ export const scaleFadeIn = (element: HTMLElement, duration = 300) => {
  * 缩放淡出动画（用于模态框）
  * 使用双重 RAF 和强制 reflow 确保 Firefox 兼容性
  */
-export const scaleFadeOut = (element: HTMLElement, duration = 300, onComplete?: () => void) => {
+export const scaleFadeOut = (element: HTMLElement, duration = 150, onComplete?: () => void) => {
   // 设置初始状态（无过渡）
   element.style.transition = 'none';
   element.style.opacity = '1';
