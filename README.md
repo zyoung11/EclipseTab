@@ -30,6 +30,8 @@
 | 2026-06-26 | 全面更名：Eclipse Tab → Monster Tab | 涉及 19 个文件：`manifest.json` 扩展元数据、`package.json` 项目名、所有 `localStorage` 键前缀（`EclipseTab_*` → `MonsterTab_*`）、IndexedDB 库名（`EclipseTabDB` → `MonsterTabDB`）、WebDAV 同步目录、导出/备份格式标识（`eclipse-space-export` → `monster-space-export`）等全部引用统一更新 |
 | 2026-06-26 | 新标签页自动聚焦搜索框 | 在 `<input>` 上添加 `autoFocus` 原生 HTML 属性，配合已有的 `useEffect` `ref.focus()` 形成双重保障。`Searcher` 组件位于 `DockLayoutContainer` 中，非懒加载，页面打开即挂载 |
 | 2026-06-26 | Tab 键切换搜索引擎 | 搜索框聚焦时按 Tab 弹出搜索引擎选择弹窗并切换到下一个引擎。弹窗位置使用引擎名元素 + 固定 80px 宽度保证稳定。选中样式改为背景高亮。750ms 无操作自动关闭，动画时长 150ms。关闭动画期间按 Tab 会被忽略（300ms 保护期）。选择引擎后自动聚焦回搜索框 |
+| 2026-06-27 | 图片贴纸旋转手柄 | 图片底部居中新增旋转手柄。拖拽时以贴纸中心为原点计算 `Math.atan2` 角度变化，通过 CSS `rotate` 属性持久化。`rotate` 与拖拽物理倾斜的 `transform` 独立叠加 |
+| 2026-06-27 | 文字贴纸旋转和缩放手柄 | 将旋转手柄和缩放手柄移到贴纸外层，文字贴纸也可使用。缩放时图片改 `scale`、文字改 `fontSize`。拖拽方向跟随贴纸旋转角度，始终以本地坐标系为准 |
 
 ## 数据存储
 
