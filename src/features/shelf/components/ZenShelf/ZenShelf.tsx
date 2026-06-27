@@ -485,6 +485,9 @@ export const ZenShelf: React.FC<ZenShelfProps> = ({ onOpenSettings }) => {
                         onScaleChange={(scale) => {
                             updateSticker(sticker.id, { scale });
                         }}
+                        onRotationChange={(rotation) => {
+                            updateSticker(sticker.id, { rotation });
+                        }}
                         onToggleCheckbox={() => {
                             updateSticker(sticker.id, { isChecked: !sticker.isChecked });
                         }}

@@ -31,6 +31,7 @@ export interface Sticker {
     y: number;               // 屏幕 Y 坐标 (px)
     zIndex?: number;         // 层级顺序（双击置顶）
     scale?: number;          // 图片缩放比例（仅图片贴纸）
+    rotation?: number;       // 旋转角度 (deg)
     isPinned?: boolean;      // 是否固定在原处不可移动
     style?: TextStickerStyle; // 仅针对文字贴纸的样式
     hasCheckbox?: boolean;   // 是否带有复选框 (仅文字贴纸)

@@ -297,6 +297,38 @@
     background: var(--blue-100, #E3F2FD);
 }
 
+/* ===== 旋转手柄 ===== */
+
+.rotateHandle {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    background: var(--white);
+    border: 2px solid var(--gray-400);
+    border-radius: 50%;
+    cursor: grab;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.sticker:hover .rotateHandle {
+    opacity: 1;
+}
+
+.rotateHandle:hover {
+    border-color: var(--blue-500);
+    background: var(--blue-100, #E3F2FD);
+}
+
+.rotateHandle:active {
+    cursor: grabbing;
+}
+
 
 /* ===== 删除按钮 ===== */
 

@@ -62,6 +62,7 @@ interface StickerItemProps {
     onStyleChange: (updates: Partial<Sticker['style']>) => void;
     onBringToTop: () => void;
     onScaleChange: (scale: number) => void;
+    onRotationChange?: (rotation: number) => void;
     isEditMode?: boolean;
     viewportScale: number;
     onDoubleClick?: () => void;
@@ -85,6 +86,7 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
     onStyleChange,
     onBringToTop,
     onScaleChange,
+    onRotationChange,
     isEditMode,
     viewportScale,
     onDoubleClick,
@@ -96,11 +98,13 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
     const elementRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
+    const [isRotating, setIsRotating] = useState(false);
     const [isBouncing, setIsBouncing] = useState(false);
     const [isDropDeleting, setIsDropDeleting] = useState(false);
     const [stickerRect, setStickerRect] = useState<DOMRect | null>(null);
     const dragStartRef = useRef<{ x: number; y: number; stickerX: number; stickerY: number } | null>(null);
     const resizeStartRef = useRef<{ x: number; y: number; startScale: number } | null>(null);
+    const rotateStartRef = useRef<{ angle: number; startRotation: number } | null>(null);
     const [imageNaturalWidth, setImageNaturalWidth] = useState<number>(300);
     // 图片贴纸的解析后 Blob URL
     const [resolvedImageUrl, setResolvedImageUrl] = useState<string | null>(null);
@@ -188,6 +192,9 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
             return;
         }
         if ((e.target as HTMLElement).closest(`.${styles.resizeHandle}`)) {
+            return;
+        }
+        if ((e.target as HTMLElement).closest(`.${styles.rotateHandle}`)) {
             return;
         }
         if ((e.target as HTMLElement).closest(`.${styles.textStickerCheckbox}`)) {
@@ -574,6 +581,27 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
         };
     };
 
+    const handleRotateStart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (sticker.isPinned) return;
+
+        const el = elementRef.current;
+        if (!el) return;
+
+        const rect = el.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI);
+
+        setIsRotating(true);
+        rotateStartRef.current = {
+            angle,
+            startRotation: sticker.rotation || 0,
+        };
+    };
+
     // 具有 RAF 节流的调整大小效果
     useEffect(() => {
         if (!isResizing) return;
@@ -627,6 +655,59 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
         };
     }, [isResizing, onScaleChange]);
 
+    // 具有 RAF 节流的旋转效果
+    useEffect(() => {
+        if (!isRotating) return;
+
+        let rotateRafId: number | null = null;
+        let pendingRotation: number | null = null;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!rotateStartRef.current) return;
+
+            const el = elementRef.current;
+            if (!el) return;
+
+            const rect = el.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const currentAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI);
+            const newRotation = rotateStartRef.current.startRotation + (currentAngle - rotateStartRef.current.angle);
+
+            pendingRotation = newRotation;
+            if (rotateRafId === null) {
+                rotateRafId = requestAnimationFrame(() => {
+                    rotateRafId = null;
+                    if (pendingRotation !== null) {
+                        onRotationChange?.(pendingRotation);
+                    }
+                });
+            }
+        };
+
+        const handleMouseUp = () => {
+            if (rotateRafId !== null) {
+                cancelAnimationFrame(rotateRafId);
+                if (pendingRotation !== null) {
+                    onRotationChange?.(pendingRotation);
+                }
+            }
+            setIsRotating(false);
+            rotateStartRef.current = null;
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            if (rotateRafId !== null) {
+                cancelAnimationFrame(rotateRafId);
+            }
+        };
+    }, [isRotating, onRotationChange]);
+
     // 获取图片原始宽度以进行缩放计算
     const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
         setImageNaturalWidth(e.currentTarget.naturalWidth);
@@ -672,6 +753,7 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
                 style={{
                     left: sticker.x * viewportScale,
                     top: sticker.y * viewportScale,
+                    rotate: `${sticker.rotation || 0}deg`,
                     // 拖拽期间提升 z-index 以保持在 UI 元素之上
                     zIndex: isDragging ? 3000 : (sticker.zIndex || 1),
                 }}
@@ -781,6 +863,11 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
                             className={styles.resizeHandle}
                             onMouseDown={handleResizeStart}
                         />
+                        {/* 旋转控制柄 - 仅在悬停时可见 */}
+                        <div
+                            className={styles.rotateHandle}
+                            onMouseDown={handleRotateStart}
+                        />
                     </div>
                 )}
 
@@ -822,6 +909,7 @@ const arePropsEqual = (prev: StickerItemProps, next: StickerItemProps) => {
         prev.sticker.content === next.sticker.content &&
         prev.sticker.zIndex === next.sticker.zIndex &&
         prev.sticker.scale === next.sticker.scale &&
+        prev.sticker.rotation === next.sticker.rotation &&
         prev.sticker.type === next.sticker.type &&
         prev.sticker.isPinned === next.sticker.isPinned &&
         prev.sticker.hasCheckbox === next.sticker.hasCheckbox &&
