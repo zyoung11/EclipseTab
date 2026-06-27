@@ -103,7 +103,7 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
     const [isDropDeleting, setIsDropDeleting] = useState(false);
     const [stickerRect, setStickerRect] = useState<DOMRect | null>(null);
     const dragStartRef = useRef<{ x: number; y: number; stickerX: number; stickerY: number } | null>(null);
-    const resizeStartRef = useRef<{ x: number; y: number; startScale: number } | null>(null);
+    const resizeStartRef = useRef<{ x: number; y: number; startScale: number; startFontSize: number } | null>(null);
     const rotateStartRef = useRef<{ angle: number; startRotation: number } | null>(null);
     const [imageNaturalWidth, setImageNaturalWidth] = useState<number>(300);
     // 图片贴纸的解析后 Blob URL
@@ -578,6 +578,7 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
             x: e.clientX,
             y: e.clientY,
             startScale: sticker.scale || 1,
+            startFontSize: sticker.style?.fontSize || 40,
         };
     };
 
@@ -607,36 +608,51 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
         if (!isResizing) return;
 
         let resizeRafId: number | null = null;
-        let pendingScale: number | null = null;
+        let pendingValue: number | null = null;
 
         const handleMouseMove = (e: MouseEvent) => {
             if (!resizeStartRef.current) return;
 
             const dx = e.clientX - resizeStartRef.current.x;
             const dy = e.clientY - resizeStartRef.current.y;
-            const delta = (dx + dy) / 2;
+            const angleRad = (sticker.rotation || 0) * Math.PI / 180;
+            const localDx = dx * Math.cos(angleRad) + dy * Math.sin(angleRad);
+            const localDy = -dx * Math.sin(angleRad) + dy * Math.cos(angleRad);
+            const delta = (localDx + localDy) / 2;
 
-            const scaleDelta = delta / 200;
-            const newScale = Math.max(0.2, Math.min(3, resizeStartRef.current.startScale + scaleDelta));
+            if (sticker.type === 'image') {
+                const scaleDelta = delta / 200;
+                const newScale = Math.max(0.2, Math.min(3, resizeStartRef.current.startScale + scaleDelta));
+                pendingValue = newScale;
+            } else {
+                const fontSizeDelta = delta / 4;
+                const newFontSize = Math.max(12, Math.min(120, resizeStartRef.current.startFontSize + fontSizeDelta));
+                pendingValue = newFontSize;
+            }
 
-            // RAF 节流
-            pendingScale = newScale;
             if (resizeRafId === null) {
                 resizeRafId = requestAnimationFrame(() => {
                     resizeRafId = null;
-                    if (pendingScale !== null) {
-                        onScaleChange(pendingScale);
+                    if (pendingValue !== null) {
+                        if (sticker.type === 'image') {
+                            onScaleChange(pendingValue);
+                        } else {
+                            onStyleChange({ fontSize: pendingValue });
+                        }
                     }
                 });
             }
         };
 
         const handleMouseUp = () => {
-            // 确保最终缩放值被更新
             if (resizeRafId !== null) {
                 cancelAnimationFrame(resizeRafId);
-                if (pendingScale !== null) {
-                    onScaleChange(pendingScale);
+                if (pendingValue !== null) {
+                    if (sticker.type === 'image') {
+                        onScaleChange(pendingValue);
+                    } else {
+                        onStyleChange({ fontSize: pendingValue });
+                    }
                 }
             }
             setIsResizing(false);
@@ -653,7 +669,7 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
                 cancelAnimationFrame(resizeRafId);
             }
         };
-    }, [isResizing, onScaleChange]);
+    }, [isResizing, onScaleChange, onStyleChange, sticker.type, sticker.rotation]);
 
     // 具有 RAF 节流的旋转效果
     useEffect(() => {
@@ -858,13 +874,14 @@ const StickerItemComponent: React.FC<StickerItemProps> = ({
                             draggable={false}
                             onLoad={handleImageLoad}
                         />
-                        {/* 调整大小控制柄 - 仅在悬停时可见 */}
-                        <div
-                            className={styles.resizeHandle}
-                            onMouseDown={handleResizeStart}
-                        />
                     </div>
                 )}
+
+                {/* 缩放控制柄 - 仅悬停时可见 */}
+                <div
+                    className={styles.resizeHandle}
+                    onMouseDown={handleResizeStart}
+                />
 
                 {/* 旋转控制柄 - 仅悬停时可见 */}
                 <div
